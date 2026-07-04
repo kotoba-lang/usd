@@ -5,3 +5,5 @@
 (def rel impl/rel)
 (def prim impl/prim)
 (def usda impl/usda)
+(def parse impl/parse)
+(def parse-prim impl/parse-prim)
