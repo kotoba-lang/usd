@@ -1,4 +1,8 @@
-# kotoba-lang/usd
+# kotoba-lang/org-openusd
+
+(renamed from `kotoba-lang/usd` 2026-07-05 — reverse-domain naming for an
+external-spec-name repo, openusd.org, same ADR-2607041500 rename precedent
+as `org-khronos-glb`/`org-khronos-gltf`/`org-materialx`.)
 
 Kotoba DSL package for `kotoba.usd`.
 
