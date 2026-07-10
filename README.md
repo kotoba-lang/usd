@@ -22,15 +22,21 @@ A USD prim hierarchy is EDN you fork and diff like the rest of the kotoba.\* wor
 ;; => "#usda 1.0\n(\n    defaultPrim = \"hello\"\n    upAxis = \"Y\"\n)\n\ndef Xform \"hello\" ( ...
 ```
 
-**Scope (ADR-0048 §4, "Relationship to ADR-2605261800"): ASCII-text only.** This library reads and
-writes the `.usda` text subset — `def`/`over`/`class` prim blocks (nested), typed attribute and
-`rel` relationship statements, `variantSet` blocks, comments, and scalar/tuple/array values. It
-deliberately does **not** attempt binary `.usdc`/`.usdz` packages, a Hydra render delegate, or full
-composition (references/payloads/sublayers/relocates as their own statements) — that larger, real
-USD-runtime effort is reserved to `kami-usd` (tinyusdz-via-Emscripten) / `kami-usd-native` (gated
-Rust fallback) in `com-junkawasaki/root` (ADR-2605261800), which this repo does not duplicate. If/
-when that lands, this repo's ASCII round-trip logic is meant to be reused inside it as the fast/
-simple case, not thrown away.
+**Scope (ADR-0048 §4, "Relationship to ADR-2605261800"): `usd.core` itself is ASCII-text only.**
+The parser/emitter read and write the `.usda` text subset — `def`/`over`/`class` prim blocks
+(nested), typed attribute and `rel` relationship statements, `variantSet` blocks, comments, and
+scalar/tuple/array values. It deliberately does **not** implement binary `.usdc`/`.usdz` packages,
+a Hydra render delegate, or full composition (references/payloads/sublayers/relocates as their own
+statements) natively — that larger, real USD-runtime effort is reserved to `kami-usd`
+(tinyusdz-via-Emscripten) / `kami-usd-native` (gated Rust fallback) in `com-junkawasaki/root`
+(ADR-2605261800), which this repo does not duplicate. If/when that lands, this repo's ASCII
+round-trip logic is meant to be reused inside it as the fast/simple case, not thrown away.
+
+**Binary `.usdc`/`.usdz` files ARE readable/writable, via `usd.usdc-bridge` (ADR-2607101525 M3)** —
+not a native crate-format implementation, but a thin oracle bridge (`tools/usd_oracle.py`, the same
+`pxr`/`usd-core` this repo already uses to validate itself) that converts binary <-> ASCII text
+and hands the text side to `usd.core`'s own real parser/emitter. See "Test" below for the oracle
+setup this needs (JVM-only, `.clj` not `.cljc`).
 
 ## Emitter → Parser symmetry
 
@@ -65,12 +71,30 @@ or they are deliberately out of this ADR's scope:
   and discarded, not reproduced — this library's own emitter only ever produces `prepend`.
 - **Attribute-level metadata blocks** (e.g. `(interpolation = "vertex")` after a value) are
   recognized and skipped — there is no EDN slot for per-attribute metadata yet.
-- **Out of scope, and raise a clear error rather than mis-parsing silently:** binary `.usdc`/
-  `.usdz`, `timeSamples` (animated/time-sampled values), and composition arcs written as their own
-  body-level statements (`references = …` / `payload = …` / `subLayers = […]` / `relocates = …`
-  outside a prim's metadata parens). A `variantSet` block, or a `prepend`-style composition-arc key
-  *inside* a prim's `( … )` metadata block (exactly what this repo's own `prim`/`usda` emit), are
-  supported.
+- **Out of scope, and raise a clear error rather than mis-parsing silently:** `timeSamples`
+  (animated/time-sampled values) and composition arcs written as their own body-level statements
+  (`references = …` / `payload = …` / `subLayers = […]` / `relocates = …` outside a prim's metadata
+  parens). A `variantSet` block, or a `prepend`-style composition-arc key *inside* a prim's `( … )`
+  metadata block (exactly what this repo's own `prim`/`usda` emit), are supported. Binary
+  `.usdc`/`.usdz` is not out of scope for the *repo* — see `usd.usdc-bridge` above — it is
+  specifically out of scope for `usd.core`'s own native parser/emitter, which stay ASCII-only.
+
+## Binary support: `usd.usdc-bridge`
+
+```clojure
+(require '[usd.usdc-bridge :as bridge])
+
+(bridge/write-usdc! {:defaultPrim "hello"}
+  [[:def "Sphere" :hello [:attr "double" :radius 2]]]
+  "/tmp/scene.usdc")
+
+(bridge/read-usdc "/tmp/scene.usdc")
+;; => {:opts {:defaultPrim "hello"}, :prims [[:def "Sphere" :hello [:attr "double" :radius 2]]]}
+```
+
+Requires the same oracle setup as `usd.oracle-test` (`pip install -r tools/requirements.txt`, or
+`USD_ORACLE_PYTHON` pointed at an interpreter with `pxr`). `oracle-available?` reports whether one
+is on hand before you call `read-usdc`/`write-usdc!`.
 
 ## Coordinate-space vocabulary for future `UsdSkel`-adjacent work (ADR-0048 §1)
 
