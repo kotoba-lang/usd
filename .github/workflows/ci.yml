@@ -41,7 +41,8 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-      - run: pip install usd-core
+          cache-dependency-path: tools/requirements.txt
+      - run: pip install -r tools/requirements.txt
       - run: clojure -M:test
 
       - run: clojure -M:lint
