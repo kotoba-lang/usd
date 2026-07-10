@@ -2,7 +2,9 @@
   "Golden tests for kotoba.usd — the Pixar USDA hiccup. They pin that EDN maps onto USD's ASCII scene
    surface: the #usda header + layer metadata, def/over specifiers, typed vs. typeless prims, nested
    prim indentation, attribute typing, tuple vs. array-of-tuples vs. scalar-array values, asset/path
-   refs, and relationships. usdcat/usdchecker validate the same output for real in `bb gate`."
+   refs, and relationships. These are self-referential string/EDN comparisons only — for validation
+   against the real Pixar USD toolchain (usdcat/usdchecker equivalents via `pip install usd-core`),
+   see `usd.oracle-test` (ADR-2607101525 D3/D4; this repo has no `bb gate` task)."
   (:require [clojure.test :refer [deftest is]]
             [clojure.string :as str]
             [kotoba.usd :as u]))

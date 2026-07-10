@@ -110,3 +110,12 @@ above do not read or write `UsdSkel` prims.
 ```sh
 clojure -M:test
 ```
+
+`test/usd/core_test.clj` is self-referential (string/EDN comparisons against this repo's own
+emitter and parser). `test/usd/oracle_test.clj` (ADR-2607101525 D3/D4) additionally validates
+against the real Pixar reference implementation — `tools/usd_oracle.py`, a thin driver around the
+`pxr` Python bindings (`pip install -r tools/requirements.txt`), shelled out to from JVM-only
+tests. Set `USD_ORACLE_PYTHON` to point at a specific interpreter, or install into whatever
+`python3` resolves to; CI (`.github/workflows/ci.yml`) installs it automatically. Without a
+`pxr`-importable interpreter available, the oracle tests skip (with a printed reason) rather than
+silently passing 0 assertions.
